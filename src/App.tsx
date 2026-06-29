@@ -2409,7 +2409,8 @@ function PracticeView({
               onCompositionStart={(event) => recordComposition("composition_start", event.data)}
               onCompositionUpdate={(event) => recordComposition("composition_update", event.data)}
               onCompositionEnd={(event) => recordComposition("composition_end", event.data)}
-              disabled={completionState !== "idle"}
+              readOnly={completionState !== "idle"}
+              aria-readonly={completionState !== "idle"}
               rows={isWubi ? 2 : 7}
             />
           )}
@@ -2567,7 +2568,7 @@ function PracticeView({
             <p className="empty">完成一轮后显示速度、准确率、退格、停顿和下一步建议。</p>
           )}
           <div className="shortcut-box">
-            <span>Enter 完成/下一步</span>
+            <span>Enter 完成；完成后 Enter 下一步</span>
             <span>完全匹配会自动保存</span>
             <span>代码 Ctrl/⌘+Enter 完成 · Esc 退出 · r 重练 · n 下一组 · s 统计 · ? 提示</span>
           </div>

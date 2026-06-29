@@ -1537,24 +1537,24 @@ textarea:disabled {
 }
 
 .target-char.pending {
-  color: #b7c3d4;
+  color: #cad6e5;
 }
 
 .target-char.correct {
-  color: #86efac;
-  background: rgba(34, 197, 94, 0.1);
+  color: #7f91a8;
+  background: rgba(125, 211, 252, 0.05);
 }
 
 .target-char.wrong {
   color: #fecaca;
-  background: rgba(239, 68, 68, 0.22);
-  box-shadow: inset 0 -2px 0 rgba(248, 113, 113, 0.9);
+  background: rgba(220, 38, 38, 0.28);
+  box-shadow: inset 0 -2px 0 rgba(248, 113, 113, 0.82);
 }
 
 .target-char.current {
-  color: #07101f;
-  background: #facc15;
-  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.18);
+  color: #101827;
+  background: #f5c84b;
+  box-shadow: 0 0 0 2px rgba(245, 200, 75, 0.16);
 }
 
 .target-char.extra {
@@ -1562,11 +1562,14 @@ textarea:disabled {
   background: rgba(239, 68, 68, 0.28);
 }
 
-.target-char.space.current::before {
-  content: "space";
-  color: #07101f;
-  font-size: 12px;
-  font-weight: 800;
+.target-char.space {
+  display: inline-block;
+  min-width: 0.72ch;
+  min-height: 1em;
+}
+
+.target-char.space.current {
+  min-width: 1ch;
 }
 
 .target-big {
@@ -1605,6 +1608,12 @@ textarea:disabled {
 .training-input:focus {
   border-color: #38bdf8;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+}
+
+.training-input[readonly] {
+  color: #9fb0c8;
+  border-color: #253a59;
+  background: #091525;
 }
 
 .editor-box {

@@ -27,7 +27,7 @@ export function buildPracticeCursorInfo(targetText: string, inputText: string): 
 
 export function formatPracticeKey(char: string | undefined): string {
   if (char === undefined) return "完成";
-  if (char === " ") return "Space";
+  if (char === " ") return "␠";
   if (char === "\n") return "Enter";
   if (char === "\t") return "Tab";
   return char;

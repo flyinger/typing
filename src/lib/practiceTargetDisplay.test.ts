@@ -4,7 +4,7 @@ import { buildPracticeCursorInfo, formatPracticeKey } from "./practiceTargetDisp
 describe("practice target display", () => {
   it("formats the next key for visible practice feedback", () => {
     expect(formatPracticeKey("a")).toBe("a");
-    expect(formatPracticeKey(" ")).toBe("Space");
+    expect(formatPracticeKey(" ")).toBe("␠");
     expect(formatPracticeKey("\n")).toBe("Enter");
     expect(formatPracticeKey("\t")).toBe("Tab");
     expect(formatPracticeKey(undefined)).toBe("完成");
