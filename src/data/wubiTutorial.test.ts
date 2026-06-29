@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { twelveWeekPlan, wubiTutorial } from "./wubiTutorial";
+import { twelveWeekPlan, wubiTutorial, wubiTutorialReferences } from "./wubiTutorial";
 
 describe("wubiTutorial curriculum", () => {
   it("ships a complete 12 week training route", () => {
@@ -31,6 +31,16 @@ describe("wubiTutorial curriculum", () => {
         "personal-dictionary",
         "real-input",
         "workflow",
+      ]),
+    );
+  });
+
+  it("links the tutorial to importable rime wubi sources", () => {
+    expect(wubiTutorial.length).toBeGreaterThanOrEqual(12);
+    expect(wubiTutorialReferences).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ url: "https://github.com/rime/rime-wubi" }),
+        expect.objectContaining({ url: "https://github.com/KyleBing/rime-wubi86-jidian" }),
       ]),
     );
   });

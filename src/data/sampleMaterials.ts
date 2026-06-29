@@ -838,6 +838,147 @@ const rawItems: RawMaterialItem[] = [
     difficulty: 4,
     prompt: "输入 Vim 操作序列",
   },
+  {
+    mode: "chinese-real",
+    targetText:
+      "今天的训练只需要先打开 Today，完成系统推荐的队列，再根据结束页处方决定是否重练。统计页和材料页都不是每日必经流程，只在复盘、补材料或同步检查时打开。",
+    category: "中文连续输入",
+    tags: ["daily-workflow", "product"],
+    difficulty: 3,
+    prompt: "使用 Rime 五笔输入完整段落",
+  },
+  {
+    mode: "chinese-real",
+    targetText:
+      "代码训练要保留换行、缩进、括号和引号，因为真实工作里的输入压力往往来自结构符号，而不是单独几个单词。短句可以热身，多行片段才适合评估稳定性。",
+    category: "中文连续输入",
+    tags: ["code", "evaluation"],
+    difficulty: 4,
+    prompt: "使用 Rime 五笔输入完整段落",
+  },
+  {
+    mode: "chinese-real",
+    targetText:
+      "五笔学习不要一上来追求速度。先让字根键位、一级简码、二级简码和拆字规则变成稳定动作，再把训练迁移到项目笔记、实验记录和长文复盘。",
+    category: "中文连续输入",
+    tags: ["wubi", "curriculum"],
+    difficulty: 4,
+    prompt: "使用 Rime 五笔输入完整段落",
+  },
+  {
+    mode: "chinese-real",
+    targetText:
+      "机器人系统调试时，命令、参数、日志和代码片段经常交替出现。训练平台应该覆盖这些混合输入，而不是只用随机词表衡量速度。",
+    category: "中文连续输入",
+    tags: ["robotics", "mixed-input"],
+    difficulty: 4,
+    prompt: "使用 Rime 五笔输入完整段落",
+  },
+  {
+    mode: "english",
+    targetText:
+      "Use the keyboard flow for daily practice: start from Today, finish the suggested queue, repeat the blocked item when the prescription asks for it, then close the app without visiting every settings screen.",
+    category: "英文连续输入",
+    tags: ["english", "workflow", "stage-2"],
+    difficulty: 4,
+    prompt: "输入英文连续段落",
+  },
+  {
+    mode: "english",
+    targetText:
+      "Code typing should measure real editing pressure: line breaks, indentation, braces, quotes, command flags, camelCase names, snake_case names, and the pauses that happen before structural symbols.",
+    category: "英文连续输入",
+    tags: ["english", "code", "stage-2"],
+    difficulty: 4,
+    prompt: "输入英文连续段落",
+  },
+  {
+    mode: "english",
+    targetText:
+      "A material library is useful only when it can be inspected. Keep packs visible, show item counts, allow search inside the opened pack, and avoid rendering a huge imported dictionary all at once.",
+    category: "英文连续输入",
+    tags: ["english", "materials", "stage-2"],
+    difficulty: 4,
+    prompt: "输入英文连续段落",
+  },
+  {
+    mode: "code",
+    targetText: [
+      "export function nextAction(state: PracticeState): PracticeAction {",
+      "  if (state.completion === \"saved\") return state.blocked ? \"repeat\" : \"next\";",
+      "  if (state.mode === \"code\") return \"submit-with-mod-enter\";",
+      "  return \"submit-with-enter\";",
+      "}",
+    ].join("\n"),
+    category: "代码连续片段",
+    tags: ["typescript", "multiline", "keyboard-flow", "stage-2"],
+    difficulty: 5,
+    prompt: "精确输入多行代码片段",
+  },
+  {
+    mode: "code",
+    targetText: [
+      "const visibleItems = selected.items",
+      "  .filter((item) => matchesQuery(item, query))",
+      "  .slice(0, query ? 500 : 240);",
+      "",
+      "return visibleItems.map((item) => renderMaterialRow(item));",
+    ].join("\n"),
+    category: "代码连续片段",
+    tags: ["typescript", "multiline", "materials", "stage-2"],
+    difficulty: 4,
+    prompt: "精确输入多行代码片段",
+  },
+  {
+    mode: "code",
+    targetText: [
+      "python scripts/export_metrics.py \\",
+      "  --input TypingLab/sessions \\",
+      "  --group-by mode \\",
+      "  --format csv",
+    ].join("\n"),
+    category: "命令连续片段",
+    tags: ["cli", "python", "multiline", "stage-2"],
+    difficulty: 4,
+    prompt: "精确输入连续命令",
+  },
+  {
+    mode: "code",
+    targetText: [
+      "def normalize_session(row):",
+      "    duration = max(row[\"duration_ms\"], 1)",
+      "    cpm = round(len(row[\"input_text\"]) / duration * 60000)",
+      "    return {**row, \"chars_per_minute\": cpm}",
+    ].join("\n"),
+    category: "代码连续片段",
+    tags: ["python", "multiline", "metrics", "stage-2"],
+    difficulty: 5,
+    prompt: "精确输入多行代码片段",
+  },
+  {
+    mode: "vim",
+    targetText: "gg /Practice<Enter> n zt ciw TrainingDesk<Esc>",
+    category: "Vim motion kata",
+    tags: ["vim", "search", "rename"],
+    difficulty: 4,
+    prompt: "输入 Vim 操作序列",
+  },
+  {
+    mode: "vim",
+    targetText: "va{ :'<,'>sort<Enter> gv =",
+    category: "Vim motion kata",
+    tags: ["vim", "visual", "sort"],
+    difficulty: 4,
+    prompt: "输入 Vim 操作序列",
+  },
+  {
+    mode: "vim",
+    targetText: "/function<Enter> n yiw:%s/<C-r>\"/handler/g<Enter>",
+    category: "Vim motion kata",
+    tags: ["vim", "search", "substitute"],
+    difficulty: 5,
+    prompt: "输入 Vim 操作序列",
+  },
 ];
 
 export async function sampleMaterialPacks(): Promise<MaterialPack[]> {

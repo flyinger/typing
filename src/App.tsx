@@ -1,6 +1,5 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, JSX } from "react";
-import type { OnMount } from "@monaco-editor/react";
 import {
   Activity,
   BarChart3,
@@ -152,6 +151,10 @@ import {
   type PracticeDiscardAction,
 } from "./lib/practiceExitGuard";
 import {
+  resolvePracticeInputKeyAction,
+  resolvePracticeWindowKeyAction,
+} from "./lib/practiceKeyboard";
+import {
   buildPracticeLiveStats,
   isPracticeInputComplete,
   type PracticeLiveStats,
@@ -185,7 +188,7 @@ import {
   syncPackageFilename,
   weeklyReviewMarkdownFilename,
 } from "./lib/exportNames";
-import { twelveWeekPlan, wubiTutorial } from "./data/wubiTutorial";
+import { twelveWeekPlan, wubiTutorial, wubiTutorialReferences } from "./data/wubiTutorial";
 import { sampleMaterialPacks } from "./data/sampleMaterials";
 import { filterMaterialPacks, summarizeMaterialPacks } from "./lib/materials";
 
@@ -236,8 +239,6 @@ const syncImportKindLabels: Record<SyncImportKind, string> = {
   folder: "同步目录清单",
   directory: "同步目录",
 };
-
-const MonacoEditor = lazy(() => import("@monaco-editor/react"));
 
 interface PracticeCounters {
   backspaces: number;
@@ -1886,32 +1887,25 @@ function PracticeView({
 
   useEffect(() => {
     function onWindowKeydown(event: KeyboardEvent): void {
-      if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement) {
-        return;
-      }
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
+      const action = resolvePracticeWindowKeyAction({
+        key: event.key,
+        mode: selectedMode,
+        shiftKey: event.shiftKey,
+        targetAcceptsText: event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement,
+      });
+      if (action === "none") return;
+      event.preventDefault();
+      if (action === "complete-or-advance") {
         requestCompleteOrAdvance();
-        return;
-      }
-      if (event.key === "Escape") {
-        event.preventDefault();
+      } else if (action === "exit") {
         requestExit();
-      }
-      if (event.key === "n") {
-        event.preventDefault();
+      } else if (action === "next") {
         requestNext();
-      }
-      if (event.key === "s") {
-        event.preventDefault();
+      } else if (action === "stats") {
         onOpenStats();
-      }
-      if (event.key === "r") {
-        event.preventDefault();
+      } else if (action === "reset") {
         requestReset();
-      }
-      if (event.key === "?") {
-        event.preventDefault();
+      } else if (action === "hint") {
         useHint();
       }
     }
@@ -2047,7 +2041,7 @@ function PracticeView({
     }, 0);
   }
 
-  function recordPaste(source: "textarea" | "monaco" | "burst-input", length?: number): void {
+  function recordPaste(source: "textarea" | "burst-input", length?: number): void {
     if (ensureStarted() === null) return;
     const now = Date.now();
     if (source === "burst-input") {
@@ -2066,18 +2060,22 @@ function PracticeView({
   }
 
   function recordKeydown(event: React.KeyboardEvent): void {
-    if (event.key === "Escape") {
+    const action = resolvePracticeInputKeyAction({
+      key: event.key,
+      mode: selectedMode,
+      completionState: completionStateRef.current,
+      shiftKey: event.shiftKey,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      isComposing: event.nativeEvent.isComposing || composingRef.current,
+    });
+
+    if (action === "exit") {
       event.preventDefault();
       requestExit();
       return;
     }
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey &&
-      selectedMode !== "code" &&
-      !event.nativeEvent.isComposing &&
-      !composingRef.current
-    ) {
+    if (action === "complete-or-advance") {
       event.preventDefault();
       requestCompleteOrAdvance();
       return;
@@ -2087,47 +2085,12 @@ function PracticeView({
     if (event.key === "Backspace") {
       updateCounters((current) => ({ ...current, backspaces: current.backspaces + 1 }));
     }
-    if ((event.key === "?" || event.key.toLowerCase() === "z") && selectedMode === "wubi-code") {
+    if (action === "record-hint") {
       event.preventDefault();
       useHint();
       return;
     }
   }
-
-  const handleCodeEditorMount: OnMount = (editor) => {
-    editor.focus();
-    const pasteAwareEditor = editor as typeof editor & {
-      onDidPaste?: (listener: () => void) => { dispose: () => void };
-    };
-    pasteAwareEditor.onDidPaste?.(() => recordPaste("monaco"));
-    editor.onKeyDown((event) => {
-      const key = event.browserEvent.key;
-      const code = event.browserEvent.code;
-
-      if (key === "Escape") {
-        event.preventDefault();
-        requestExit();
-        return;
-      }
-      if (key === "Enter" && completionStateRef.current === "saved") {
-        event.preventDefault();
-        requestNext();
-        return;
-      }
-      if (ensureStarted() === null) return;
-
-      pushEvent("keydown", { key, code });
-      if (key === "Backspace") {
-        updateCounters((current) => ({ ...current, backspaces: current.backspaces + 1 }));
-      }
-      if (key === "Enter" && (event.browserEvent.metaKey || event.browserEvent.ctrlKey)) {
-        event.preventDefault();
-        if (inputValueRef.current.trim().length > 0) {
-          void complete();
-        }
-      }
-    });
-  };
 
   function recordComposition(type: "composition_start" | "composition_update" | "composition_end", data: string): void {
     if (ensureStarted() === null) return;
@@ -2375,45 +2338,28 @@ function PracticeView({
             </div>
           )}
 
-          {isCode ? (
-            <div className="editor-box">
-              <Suspense fallback={<div className="editor-loading">正在加载代码训练编辑器...</div>}>
-                <MonacoEditor
-                  key={`${item.id}-${practiceRunId}`}
-                  height="180px"
-                  defaultLanguage="typescript"
-                  theme="vs-dark"
-                  value={input}
-                  onChange={(value) => recordInput(value ?? "")}
-                  onMount={handleCodeEditorMount}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 15,
-                    lineNumbers: "off",
-                    readOnly: completionState !== "idle",
-                    wordWrap: "on",
-                    scrollBeyondLastLine: false,
-                  }}
-                />
-              </Suspense>
-            </div>
-          ) : (
-            <textarea
-              ref={inputRef}
-              className="training-input"
-              value={input}
-              placeholder={isWubi ? "输入编码，Enter 完成，z/? 显示提示" : "开始输入，Enter 完成；Shift+Enter 换行"}
-              onChange={(event) => recordInput(event.target.value)}
-              onKeyDown={recordKeydown}
-              onPaste={(event) => recordPaste("textarea", event.clipboardData.getData("text").length)}
-              onCompositionStart={(event) => recordComposition("composition_start", event.data)}
-              onCompositionUpdate={(event) => recordComposition("composition_update", event.data)}
-              onCompositionEnd={(event) => recordComposition("composition_end", event.data)}
-              readOnly={completionState !== "idle"}
-              aria-readonly={completionState !== "idle"}
-              rows={isWubi ? 2 : 7}
-            />
-          )}
+          <textarea
+            ref={inputRef}
+            className={`training-input ${isCode ? "code-training-input" : ""}`}
+            value={input}
+            placeholder={
+              isWubi
+                ? "输入编码，Enter 完成，z/? 显示提示"
+                : isCode
+                  ? "输入整段代码，Ctrl/⌘+Enter 完成；Enter 换行"
+                  : "开始输入，Enter 完成；Shift+Enter 换行"
+            }
+            onChange={(event) => recordInput(event.target.value)}
+            onKeyDown={recordKeydown}
+            onPaste={(event) => recordPaste("textarea", event.clipboardData.getData("text").length)}
+            onCompositionStart={(event) => recordComposition("composition_start", event.data)}
+            onCompositionUpdate={(event) => recordComposition("composition_update", event.data)}
+            onCompositionEnd={(event) => recordComposition("composition_end", event.data)}
+            readOnly={completionState !== "idle"}
+            aria-readonly={completionState !== "idle"}
+            spellCheck={false}
+            rows={isWubi ? 2 : isCode ? 12 : 7}
+          />
 
           <div className="training-actions">
             <button onClick={requestCompleteOrAdvance} disabled={!canPrimaryAction || isSavingCompletion}>
@@ -2568,9 +2514,9 @@ function PracticeView({
             <p className="empty">完成一轮后显示速度、准确率、退格、停顿和下一步建议。</p>
           )}
           <div className="shortcut-box">
-            <span>Enter 完成；完成后 Enter 下一步</span>
+            <span>Enter 完成；代码用 Ctrl/⌘+Enter 完成</span>
             <span>完全匹配会自动保存</span>
-            <span>代码 Ctrl/⌘+Enter 完成 · Esc 退出 · r 重练 · n 下一组 · s 统计 · ? 提示</span>
+            <span>完成后 Enter 下一步 · Esc 退出 · r 重练 · n 下一组 · s 统计 · ? 提示</span>
           </div>
         </aside>
       </div>
@@ -3406,6 +3352,7 @@ function MaterialsView({
   const [modeFilter, setModeFilter] = useState<"all" | TrainingMode>("all");
   const [sourceFilter, setSourceFilter] = useState<"all" | "builtin" | "imported">("all");
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
+  const [itemQuery, setItemQuery] = useState("");
   const summaries = useMemo(
     () => summarizeMaterialPacks(materials, sessions),
     [materials, sessions],
@@ -3421,6 +3368,26 @@ function MaterialsView({
   const selectedSummary = selectedMaterial
     ? summaries.find((summary) => summary.id === selectedMaterial.id)
     : null;
+  const selectedItems = useMemo(() => {
+    if (!selectedMaterial) return [];
+    const normalizedQuery = itemQuery.trim().toLowerCase();
+    if (!normalizedQuery) return selectedMaterial.items;
+    return selectedMaterial.items.filter((item) =>
+      [
+        item.targetText,
+        item.category,
+        item.prompt,
+        item.explanation ?? "",
+        item.expectedCodes?.join(" ") ?? "",
+        item.tags.join(" "),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [selectedMaterial, itemQuery]);
+  const visibleSelectedItems = selectedItems.slice(0, itemQuery.trim() ? 500 : 240);
+  const hiddenSelectedItemCount = selectedItems.length - visibleSelectedItems.length;
   const allMaterialItems = useMemo(
     () => materials.flatMap((material) => material.items),
     [materials],
@@ -3667,7 +3634,10 @@ function MaterialsView({
                 <button
                   className={`material-row ${selectedMaterial?.id === material.id ? "active" : ""}`}
                   key={material.id}
-                  onClick={() => setSelectedMaterialId(material.id)}
+                  onClick={() => {
+                    setSelectedMaterialId(material.id);
+                    setItemQuery("");
+                  }}
                 >
                   <strong>{material.name}</strong>
                   <span>{material.description}</span>
@@ -3684,7 +3654,10 @@ function MaterialsView({
           {selectedMaterial && selectedSummary ? (
             <>
               <div className="panel-heading">
-                <h2>{selectedMaterial.name}</h2>
+                <div>
+                  <h2>{selectedMaterial.name}</h2>
+                  <p>已打开这个材料包，可搜索并浏览其中条目。</p>
+                </div>
                 <button
                   className="danger-inline"
                   disabled={!selectedSummary.canDelete}
@@ -3706,14 +3679,47 @@ function MaterialsView({
                 <span>{selectedMaterial.source}</span>
                 <span>{selectedMaterial.contentHash.slice(0, 10)}</span>
               </div>
-              <div className="sample-list">
-                {selectedMaterial.items.slice(0, 12).map((item) => (
-                  <div key={item.id}>
-                    <strong>{item.targetText}</strong>
-                    <span>{modeLabels[item.mode]} · {item.category}</span>
-                    {item.expectedCodes?.length ? <code>{item.expectedCodes.join(" / ")}</code> : null}
-                  </div>
-                ))}
+              <div className="material-item-tools">
+                <label className="field">
+                  <span>搜索当前材料包</span>
+                  <input
+                    value={itemQuery}
+                    onChange={(event) => setItemQuery(event.target.value)}
+                    placeholder="目标文本、编码、分类、标签"
+                  />
+                </label>
+                <div className="material-open-count">
+                  <strong>{visibleSelectedItems.length}</strong>
+                  <span>
+                    / {selectedItems.length} 条
+                    {hiddenSelectedItemCount > 0 ? `，还有 ${hiddenSelectedItemCount} 条可通过搜索定位` : ""}
+                  </span>
+                </div>
+              </div>
+              <div className="material-item-list" aria-label={`${selectedMaterial.name} 条目列表`}>
+                {visibleSelectedItems.length === 0 ? (
+                  <div className="empty-card">当前材料包里没有匹配条目。</div>
+                ) : (
+                  visibleSelectedItems.map((item, index) => (
+                    <div className="material-item-row" key={item.id}>
+                      <div className="material-item-top">
+                        <span>#{index + 1}</span>
+                        <small>{modeLabels[item.mode]} · {item.category} · 难度 {item.difficulty}</small>
+                      </div>
+                      <strong className={item.mode === "code" ? "material-code-target" : ""}>
+                        {item.targetText}
+                      </strong>
+                      {item.expectedCodes?.length ? <code>{item.expectedCodes.join(" / ")}</code> : null}
+                      {item.tags.length > 0 && (
+                        <div className="material-tag-row">
+                          {item.tags.slice(0, 8).map((tag) => (
+                            <span key={tag}>{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </>
           ) : (
@@ -3769,6 +3775,23 @@ function TutorialView({
           <p>教程内置在产品里，训练和材料导入可以直接衔接。</p>
         </div>
       </header>
+      <section className="tutorial-index">
+        <div className="panel-heading">
+          <div>
+            <h2>五笔课程索引</h2>
+            <p>按学习阶段快速回查：环境、键位、简码、拆字、识别码、词组、错题和速度迁移。</p>
+          </div>
+        </div>
+        <div className="tutorial-index-grid">
+          {wubiTutorial.map((section, index) => (
+            <a href={`#tutorial-${section.id}`} key={section.id}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{section.title}</strong>
+              <small>{section.goal}</small>
+            </a>
+          ))}
+        </div>
+      </section>
       <section className="tutorial-schedule">
         <div className="panel-heading">
           <div>
@@ -3809,7 +3832,7 @@ function TutorialView({
       </section>
       <div className="tutorial-list">
         {wubiTutorial.map((section, index) => (
-          <article className="tutorial-card" key={section.id}>
+          <article className="tutorial-card" id={`tutorial-${section.id}`} key={section.id}>
             <span className="step-number">{String(index + 1).padStart(2, "0")}</span>
             <div>
               <h2>{section.title}</h2>
@@ -3826,6 +3849,19 @@ function TutorialView({
           </article>
         ))}
       </div>
+      <section className="tutorial-references">
+        <div className="panel-heading">
+          <h2>参考与导入来源</h2>
+        </div>
+        <div className="reference-grid">
+          {wubiTutorialReferences.map((reference) => (
+            <a href={reference.url} target="_blank" rel="noreferrer" key={reference.url}>
+              <strong>{reference.title}</strong>
+              <span>{reference.detail}</span>
+            </a>
+          ))}
+        </div>
+      </section>
     </section>
   );
 }
