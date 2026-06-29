@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.typinglab.pid
+.typinglab.launcher.pid
+.typinglab.url
+launchers/
+TypingLab/
+typinglab-sync-*.json
+typinglab-sync-folder-*.json
+typinglab-events-*.jsonl
+typinglab-sessions-*.csv
+typinglab-weekly-review-*.md

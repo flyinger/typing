@@ -1,0 +1,43 @@
+{
+  "name": "typing-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "train": "vite --host 127.0.0.1 --open",
+    "open": "bash scripts/open-typinglab.sh",
+    "stop": "bash scripts/stop-typinglab.sh",
+    "install:launchers": "bash scripts/install-launchers.sh",
+    "serve": "vite --host 127.0.0.1",
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "doctor": "bash scripts/doctor-typinglab.sh",
+    "doctor:full": "TYPINGLAB_DOCTOR_FULL=1 bash scripts/doctor-typinglab.sh",
+    "test": "vitest run",
+    "test:smoke": "vitest run src/data/sampleMaterials.test.ts src/lib/trainingPlan.test.ts src/lib/weeklyPlanFlow.test.ts src/lib/todayRecommendations.test.ts src/lib/practiceModeWarning.test.ts src/lib/practiceExitGuard.test.ts src/lib/practiceLiveStats.test.ts src/lib/practiceTargetDisplay.test.ts src/lib/materialImport.test.ts src/lib/rimeParser.test.ts src/lib/professionalMaterialGenerator.test.ts src/lib/weeklyReviewExport.test.ts src/lib/sync.test.ts src/lib/syncHealth.test.ts src/lib/syncFolder.test.ts src/lib/syncFolderWriter.test.ts src/lib/syncRoundtrip.test.ts src/lib/exportNames.test.ts test/serviceWorkerCache.test.ts"
+  },
+  "engines": {
+    "node": ">=18",
+    "npm": ">=9"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "dexie": "^4.2.1",
+    "lucide-react": "^0.468.0",
+    "monaco-editor": "^0.52.2",
+    "papaparse": "^5.5.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.16",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}
